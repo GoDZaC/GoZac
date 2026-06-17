@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Birthday! 🎂</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a0533; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  #scene { position: relative; width: 100vw; min-height: 100vh; }
+  canvas#bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .card {
+    position: relative; z-index: 10;
+    margin: 0 auto; max-width: 480px;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 24px;
+    padding: 36px 28px 28px;
+    text-align: center;
+    box-shadow: 0 8px 48px rgba(180,60,180,0.18);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+  }
+  .title {
+    font-family: 'Dancing Script', cursive;
+    font-size: 52px; font-weight: 700;
+    background: linear-gradient(135deg, #FFD700, #FF6EC7, #A259FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1; margin-bottom: 6px;
+  }
+  .sub {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px; color: rgba(255,255,255,0.88);
+    letter-spacing: 2px; margin-bottom: 22px;
+  }
+  .cake-wrap {
+    margin: 8px 0 18px; font-size: 72px;
+    display: block;
+    animation: float 2.6s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  .msg {
+    font-size: 15px; color: rgba(255,255,255,0.75);
+    line-height: 1.7; margin-bottom: 22px;
+    font-family: sans-serif;
+  }
+  .btn {
+    display: inline-block; padding: 12px 32px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #FF6EC7, #A259FF);
+    color: #fff; font-size: 15px;
+    font-family: sans-serif; font-weight: 600;
+    letter-spacing: 1px; border: none; cursor: pointer;
+    box-shadow: 0 4px 18px rgba(162,89,255,0.35);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 28px rgba(162,89,255,0.5);
+  }
+  .balloon {
+    position: absolute; font-size: 36px;
+    animation: rise linear infinite;
+    pointer-events: none; z-index: 6;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(110vh) rotate(-8deg); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateY(-10vh) rotate(8deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="scene">
+  <canvas id="bg"></canvas>
+  <div id="balloons"></div>
+  <div class="card">
+    <span class="cake-wrap">🎂</span>
+    <div class="title">Happy Birthday!</div>
+    <div class="sub">✦ วันพิเศษของคุณ ✦</div>
+    <div class="msg">
+      ขอให้วันนี้เต็มไปด้วยความสุข รอยยิ้ม และความทรงจำดีๆ<br>
+      ขอให้ทุกความฝันเป็นจริง และชีวิตเปี่ยมไปด้วยความรัก 💖
+    </div>
+    <button class="btn" onclick="burst()">🎉 กดเพื่อฉลอง!</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+const scene = document.getElementById('scene');
+let W, H, particles = [];
+
+function resize() {
+  W = canvas.width = scene.offsetWidth;
+  H = canvas.height = scene.offsetHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+function randBetween(a, b) { return a + Math.random() * (b - a); }
+
+function drawBg() {
+  const grd = ctx.createLinearGradient(0, 0, W, H);
+  grd.addColorStop(0, '#1a0533');
+  grd.addColorStop(0.5, '#3b0764');
+  grd.addColorStop(1, '#1e0a4a');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+}
+
+class Particle {
+  constructor(x, y, burst) {
+    this.x = x ?? randBetween(0, W);
+    this.y = y ?? randBetween(-20, H);
+    this.vx = burst ? randBetween(-6, 6) : randBetween(-0.4, 0.4);
+    this.vy = burst ? randBetween(-10, -2) : randBetween(0.3, 1.2);
+    this.alpha = burst ? 1 : randBetween(0.4, 1);
+    this.r = burst ? randBetween(3, 7) : randBetween(1, 2.5);
+    this.color = ['#FFD700','#FF6EC7','#A259FF','#7EE8FA','#FF9A3C','#fff'][Math.floor(Math.random() * 6)];
+    this.gravity = burst ? 0.18 : 0;
+    this.fade = burst ? 0.016 : 0;
+    this.burst = !!burst;
+    this.shape = burst ? (['circle','star','rect'][Math.floor(Math.random() * 3)]) : 'circle';
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += this.gravity;
+    this.alpha -= this.fade;
+    if (!this.burst) {
+      if (this.y > H + 10) this.y = -10;
+      if (this.x < -10) this.x = W + 10;
+      if (this.x > W + 10) this.x = -10;
+    }
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, this.alpha);
+    ctx.fillStyle = this.color;
+    if (this.shape === 'star') {
+      drawStar(ctx, this.x, this.y, 5, this.r, this.r * 0.45);
+    } else if (this.shape === 'rect') {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.x * 0.05);
+      ctx.fillRect(-this.r / 2, -this.r / 2, this.r, this.r * 1.6);
+      ctx.restore();
+    } else {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+  let rot = (Math.PI / 2) * 3, x, y, step = Math.PI / spikes;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - outerR);
+  for (let i = 0; i < spikes; i++) {
+    x = cx + Math.cos(rot) * outerR; y = cy + Math.sin(rot) * outerR;
+    ctx.lineTo(x, y); rot += step;
+    x = cx + Math.cos(rot) * innerR; y = cy + Math.sin(rot) * innerR;
+    ctx.lineTo(x, y); rot += step;
+  }
+  ctx.lineTo(cx, cy - outerR);
+  ctx.closePath(); ctx.fill();
+}
+
+for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+function burst() {
+  const cx = W / 2, cy = H / 2;
+  for (let i = 0; i < 120; i++) particles.push(new Particle(cx, cy, true));
+  spawnBalloons();
+}
+
+function spawnBalloons() {
+  const emojis = ['🎈','🎉','🎊','🌟','💖','✨'];
+  const wrap = document.getElementById('balloons');
+  wrap.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const b = document.createElement('div');
+    b.className = 'balloon';
+    b.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    b.style.left = randBetween(2, 92) + '%';
+    b.style.animationDuration = randBetween(3.5, 7) + 's';
+    b.style.animationDelay = randBetween(0, 1.5) + 's';
+    b.style.fontSize = randBetween(28, 48) + 'px';
+    wrap.appendChild(b);
+  }
+  setTimeout(() => wrap.innerHTML = '', 8000);
+}
+
+function animate() {
+  drawBg();
+  particles = particles.filter(p => p.alpha > 0);
+  while (particles.filter(p => !p.burst).length < 55) particles.push(new Particle());
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
